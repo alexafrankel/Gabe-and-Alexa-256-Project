@@ -1,0 +1,101 @@
+#FROM OUR JUPTYER HUB FLIGHT SEARCH FUNCTION: 
+
+#MADE INTO A FUNCTION
+
+def flightsearch (Origin,desination,departure): 
+    amadeus = Client(client_id = "XuHNL1g0BteOokbJBNLwMQTit9lVqpjF", client_secret = "4HJQ3KPsDSVNeuAi")
+    response = amadeus.shopping.flight_offers_search.get(originLocationCode=Origin , destinationLocationCode= destination, departureDate=departure, adults = 1)
+    for resp in response.data:
+       
+        for offer in resp['itineraries']:
+            from pandas.io.json import json_normalize 
+            df=json_normalize(offer['segments'])
+           
+
+            Flight_df= df[["departure.iataCode", "departure.at",'arrival.at','number','arrival.iataCode']]
+
+            Flight_df['flight deperature location'] =Flight_df['departure.iataCode'] 
+            Flight_df['flight deperature times'] =Flight_df['departure.at'] 
+            Flight_df['flight arrival times'] =Flight_df['arrival.at'] 
+            Flight_df['flight segment number'] =Flight_df['number'] 
+            Flight_df['flight arrival place'] =Flight_df['arrival.iataCode'] 
+
+
+            Flight_df = Flight_df[['flight deperature location','flight deperature times','flight arrival times','flight segment number','flight arrival place']]
+    return  Flight_df
+
+#FROM OUR JUPTYER HUB HOTEL SEARCH FUNCTION: 
+
+!pip install amadeus
+from IPython.display import display
+import pandas as pd
+from pandas.io.json import json_normalize
+
+    
+from amadeus import Client, ResponseError 
+
+def hotelSearch(cityCode):
+    
+    
+
+    amadeus = Client(client_id = "XuHNL1g0BteOokbJBNLwMQTit9lVqpjF", client_secret = "4HJQ3KPsDSVNeuAi")
+    response = amadeus.shopping.hotel_offers.get(cityCode= cityCode)
+    hotelid = response.data[0]['hotel']['hotelId']
+
+    resp = amadeus.shopping.hotel_offers_by_hotel.get(hotelId = hotelid)
+    offers_df = json_normalize(resp.data['offers'])
+    #display(offers_df)
+
+    hotel_df = offers_df[['room.type','room.typeEstimated.beds','room.typeEstimated.bedType', 'price.total','id']]
+   
+    hotel_df['Type of Room'] = hotel_df['room.type']
+    hotel_df['Number of Beds'] = hotel_df['room.typeEstimated.beds']
+    hotel_df['Type of Beds'] = hotel_df['room.typeEstimated.bedType']
+    hotel_df['Total Price'] = hotel_df['price.total']
+    hotel_df['Hotel ID'] = hotel_df['id']
+        
+    hotel_df = hotel_df[['Type of Room','Number of Beds','Type of Beds', 'Total Price','Hotel ID']]
+    return display(hotel_df)
+    
+    
+    #FROM JUPYTER HUB OUR WEATHER SEARCH FUNCTION
+    #FROM HOMEWORK 10 PANDAS DARKSKY MASHUP GIVES U PREDICTION OF 7 DAYS AND DOES PANADAS 
+#FROM HOMEWORK 10 PANDAS DARKSKY MASHUP GIVES U PREDICTION OF 7 DAYS AND DOES PANADAS 
+import requests 
+import json 
+import pandas as pd 
+import numpy as np 
+import geocoder 
+
+address = input('Please Enter in a address:')
+def weather(address):
+    your_address = geocoder.osm(address)
+    convert = your_address.json 
+    lat = convert['lat']
+    long = convert['lng']
+
+    key = '3428d875996cccbf7b713a175d3fd7a5'  
+    url='https://api.darksky.net/forecast/%s/%f,%f' % (key, lat , long)
+    response = requests.get(url)
+    forecast = response.json()
+    count = 0 
+    time_list = []
+    max_list = []
+    min_list = []
+
+
+    for weather in range(8):
+        weather = forecast['daily']['data'][count]['time']
+        weatherdiagram = pd.to_datetime(weather,unit='s')
+        time_list.append(weatherdiagram)
+        temp_max = pd.Series([forecast['daily']['data'][count]['temperatureMax']]) 
+        max_list.append(temp_max)
+        temp_min = pd.Series([forecast['daily']['data'][count]['temperatureMin']])
+        min_list.append(temp_min)
+        count = count + 1
+    weatherdf= pd.DataFrame({'Time': weatherdiagram, 'Temperature_Max': max_list,'Temperature_Min': min_list})
+    return weatherdf
+    
+    
+    f = weather(address) 
+    f
